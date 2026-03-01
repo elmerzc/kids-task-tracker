@@ -329,13 +329,25 @@
     </div>
 
     <script>
-        // Default tasks with time slots
-        const defaultTasks = [
-            { name: "Reading Time", startTime: "09:00", endTime: "09:15" },
-            { name: "Math Practice", startTime: "09:15", endTime: "09:35" },
-            { name: "Free Play", startTime: "09:35", endTime: "09:50" },
-            { name: "Cleaning Up", startTime: "09:50", endTime: "10:00" }
-        ];
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Generate default tasks starting from the current hour
+        function buildDefaultTasks() {
+            const now = new Date();
+            const h = now.getHours();
+            const pad = n => n.toString().padStart(2, '0');
+            return [
+                { name: "Reading Time", startTime: `${pad(h)}:00`, endTime: `${pad(h)}:15` },
+                { name: "Math Practice", startTime: `${pad(h)}:15`, endTime: `${pad(h)}:35` },
+                { name: "Free Play", startTime: `${pad(h)}:35`, endTime: `${pad(h)}:50` },
+                { name: "Cleaning Up", startTime: `${pad(h)}:50`, endTime: `${pad(h + 1)}:00` }
+            ];
+        }
+        const defaultTasks = buildDefaultTasks();
 
         // Load tasks
         let tasks = loadTasks();
@@ -389,6 +401,15 @@
             if (!startTime || !endTime) return alert('Please set both start and end times.');
             if (timeToMinutes(endTime) <= timeToMinutes(startTime)) return alert('End time must be after start time.');
 
+            const newStart = timeToMinutes(startTime);
+            const newEnd = timeToMinutes(endTime);
+            const overlap = tasks.find(t => {
+                const s = timeToMinutes(t.startTime);
+                const e = timeToMinutes(t.endTime);
+                return newStart < e && newEnd > s;
+            });
+            if (overlap) return alert(`This overlaps with "${overlap.name}" (${formatTime12h(overlap.startTime)} - ${formatTime12h(overlap.endTime)})`);
+
             tasks.push({ name, startTime, endTime });
             // Sort tasks by start time
             tasks.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
@@ -419,7 +440,7 @@
                 const duration = getDurationMinutes(task);
                 html += `
                     <div class="task-list-item">
-                        <span class="task-list-name">${index + 1}. ${task.name}</span>
+                        <span class="task-list-name">${index + 1}. ${escapeHTML(task.name)}</span>
                         <span class="task-list-time">${formatTime12h(task.startTime)} - ${formatTime12h(task.endTime)} (${duration} min)</span>
                         <button class="btn btn-danger btn-small" onclick="removeTask(${index})">&#10005;</button>
                     </div>
@@ -484,11 +505,10 @@
                 // Show upcoming tasks (after current)
                 let upcomingHTML = '';
                 for (let i = activeIndex + 1; i < tasks.length; i++) {
-                    const dur = getDurationMinutes(tasks[i]);
                     upcomingHTML += `
                         <div class="task-item">
-                            <span class="task-item-name">${tasks[i].name}</span>
-                            <span class="task-item-time">${dur} min</span>
+                            <span class="task-item-name">${escapeHTML(tasks[i].name)}</span>
+                            <span class="task-item-time">${formatTime12h(tasks[i].startTime)} - ${formatTime12h(tasks[i].endTime)}</span>
                         </div>
                     `;
                 }
@@ -520,18 +540,17 @@
 
                     let upcomingHTML = '';
                     for (let i = nextIndex; i < tasks.length; i++) {
-                        const dur = getDurationMinutes(tasks[i]);
                         upcomingHTML += `
                             <div class="task-item">
-                                <span class="task-item-name">${tasks[i].name}</span>
-                                <span class="task-item-time">${dur} min</span>
+                                <span class="task-item-name">${escapeHTML(tasks[i].name)}</span>
+                                <span class="task-item-time">${formatTime12h(tasks[i].startTime)} - ${formatTime12h(tasks[i].endTime)}</span>
                             </div>
                         `;
                     }
                     upcomingTasksEl.innerHTML = upcomingHTML;
                 } else {
                     // All tasks are done for the day
-                    currentTaskNameEl.textContent = "All Done! &#127881;";
+                    currentTaskNameEl.textContent = "All Done! \u{1F389}";
                     timeRemainingEl.textContent = "Great job today!";
                     progressFillEl.style.width = '100%';
                     currentTaskEl.style.setProperty('--progress', '100%');
@@ -539,6 +558,12 @@
                 }
             }
         }
+
+        document.querySelectorAll('#adminPanel input').forEach(input => {
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') addTask();
+            });
+        });
 
         setInterval(updateDisplay, 1000);
         updateDisplay();
