@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids Task Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .admin-toggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            z-index: 1000;
+        }
+
+        .admin-toggle:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        /* Admin Panel */
+        .admin-panel {
+            display: none;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .admin-panel.active {
+            display: block;
+        }
+
+        .admin-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .time-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .time-row .form-group {
+            flex: 1;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.02);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #eee;
+            color: #333;
+        }
+
+        .task-list {
+            margin-top: 20px;
+        }
+
+        .task-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .task-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-list-name {
+            flex: 1;
+        }
+
+        .task-list-time {
+            color: #888;
+            margin-right: 10px;
+            font-size: 0.9rem;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+
+        /* Kid View */
+        .current-task {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .current-task::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: var(--progress, 0%);
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            opacity: 0.3;
+            transition: width 1s linear;
+        }
+
+        .task-label {
+            font-size: 1rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .task-name {
+            font-size: 2.5rem;
+            color: #333;
+            position: relative;
+            z-index: 1;
+        }
+
+        .time-remaining {
+            font-size: 1.5rem;
+            color: #667eea;
+            margin-top: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+            transition: width 1s linear;
+        }
+
+        .upcoming-tasks {
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .upcoming-title {
+            color: white;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .task-item {
+            background: rgba(255,255,255,0.9);
+            margin-bottom: 10px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-item.completed {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        .task-item-name {
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .task-item-time {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .current-task.active {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-toggle" onclick="toggleAdmin()">&#9881;&#65039; Admin</div>
+
+    <div class="container">
+        <h1>&#127919; Today's Tasks</h1>
+
+        <!-- Admin Panel -->
+        <div class="admin-panel" id="adminPanel">
+            <div class="admin-title">&#9881;&#65039; Manage Tasks</div>
+
+            <div class="form-group">
+                <label>Task Name</label>
+                <input type="text" id="taskName" placeholder="e.g., Reading Time">
+            </div>
+
+            <div class="time-row">
+                <div class="form-group">
+                    <label>Start Time</label>
+                    <input type="time" id="taskStartTime">
+                </div>
+                <div class="form-group">
+                    <label>End Time</label>
+                    <input type="time" id="taskEndTime">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="addTask()">Add Task</button>
+                <button class="btn btn-secondary" onclick="resetTasks()">Reset All</button>
+            </div>
+
+            <div class="task-list" id="taskList"></div>
+        </div>
+
+        <!-- Kid View -->
+        <div class="current-task" id="currentTask">
+            <div class="task-label">Current Task</div>
+            <div class="task-name" id="currentTaskName">No tasks yet!</div>
+            <div class="time-remaining" id="timeRemaining"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <div class="upcoming-tasks">
+            <div class="upcoming-title">Coming Up Next:</div>
+            <div id="upcomingTasks"></div>
+        </div>
+    </div>
+
+    <script>
+        // Default tasks with time slots
+        const defaultTasks = [
+            { name: "Reading Time", startTime: "09:00", endTime: "09:15" },
+            { name: "Math Practice", startTime: "09:15", endTime: "09:35" },
+            { name: "Free Play", startTime: "09:35", endTime: "09:50" },
+            { name: "Cleaning Up", startTime: "09:50", endTime: "10:00" }
+        ];
+
+        // Load tasks
+        let tasks = loadTasks();
+
+        function loadTasks() {
+            const saved = localStorage.getItem('kidsTasks');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Migrate old format (minutes-based) to new format (time-based)
+                if (parsed.length > 0 && parsed[0].minutes !== undefined) {
+                    localStorage.removeItem('kidsTasks');
+                    return [...defaultTasks];
+                }
+                return parsed;
+            }
+            return [...defaultTasks];
+        }
+
+        function saveState() {
+            localStorage.setItem('kidsTasks', JSON.stringify(tasks));
+            renderTaskList();
+        }
+
+        function toggleAdmin() {
+            document.getElementById('adminPanel').classList.toggle('active');
+            renderTaskList();
+        }
+
+        function timeToMinutes(timeStr) {
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        function formatTime12h(timeStr) {
+            const [h, m] = timeStr.split(':').map(Number);
+            const period = h >= 12 ? 'PM' : 'AM';
+            const hour12 = h % 12 || 12;
+            return `${hour12}:${m.toString().padStart(2, '0')} ${period}`;
+        }
+
+        function getDurationMinutes(task) {
+            return timeToMinutes(task.endTime) - timeToMinutes(task.startTime);
+        }
+
+        function addTask() {
+            const name = document.getElementById('taskName').value.trim();
+            const startTime = document.getElementById('taskStartTime').value;
+            const endTime = document.getElementById('taskEndTime').value;
+
+            if (!name) return alert('Please enter a task name.');
+            if (!startTime || !endTime) return alert('Please set both start and end times.');
+            if (timeToMinutes(endTime) <= timeToMinutes(startTime)) return alert('End time must be after start time.');
+
+            tasks.push({ name, startTime, endTime });
+            // Sort tasks by start time
+            tasks.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskStartTime').value = '';
+            document.getElementById('taskEndTime').value = '';
+            saveState();
+        }
+
+        function removeTask(index) {
+            tasks.splice(index, 1);
+            saveState();
+        }
+
+        function resetTasks() {
+            if (confirm('Reset all tasks and start over?')) {
+                tasks = [...defaultTasks];
+                saveState();
+            }
+        }
+
+        function renderTaskList() {
+            const listEl = document.getElementById('taskList');
+            let html = '<h3 style="margin-top:10px; margin-bottom:5px;">Current Schedule:</h3>';
+
+            tasks.forEach((task, index) => {
+                const duration = getDurationMinutes(task);
+                html += `
+                    <div class="task-list-item">
+                        <span class="task-list-name">${index + 1}. ${task.name}</span>
+                        <span class="task-list-time">${formatTime12h(task.startTime)} - ${formatTime12h(task.endTime)} (${duration} min)</span>
+                        <button class="btn btn-danger btn-small" onclick="removeTask(${index})">&#10005;</button>
+                    </div>
+                `;
+            });
+
+            listEl.innerHTML = html;
+        }
+
+        function updateDisplay() {
+            const currentTaskEl = document.getElementById('currentTask');
+            const currentTaskNameEl = document.getElementById('currentTaskName');
+            const timeRemainingEl = document.getElementById('timeRemaining');
+            const progressFillEl = document.getElementById('progressFill');
+            const upcomingTasksEl = document.getElementById('upcomingTasks');
+
+            if (tasks.length === 0) {
+                currentTaskNameEl.textContent = "No tasks yet!";
+                timeRemainingEl.textContent = "";
+                progressFillEl.style.width = '0%';
+                currentTaskEl.style.setProperty('--progress', '0%');
+                upcomingTasksEl.innerHTML = '<div class="task-item"><span class="task-item-name">Add tasks in the admin panel</span></div>';
+                return;
+            }
+
+            const now = new Date();
+            const nowMinutes = now.getHours() * 60 + now.getMinutes();
+            const nowSeconds = nowMinutes * 60 + now.getSeconds();
+
+            // Find active task based on current time
+            let activeTask = null;
+            let activeIndex = -1;
+            for (let i = 0; i < tasks.length; i++) {
+                const start = timeToMinutes(tasks[i].startTime);
+                const end = timeToMinutes(tasks[i].endTime);
+                if (nowMinutes >= start && nowMinutes < end) {
+                    activeTask = tasks[i];
+                    activeIndex = i;
+                    break;
+                }
+            }
+
+            if (activeTask) {
+                // Currently in a task
+                currentTaskNameEl.textContent = activeTask.name;
+                currentTaskEl.classList.add('active');
+
+                const startSec = timeToMinutes(activeTask.startTime) * 60;
+                const endSec = timeToMinutes(activeTask.endTime) * 60;
+                const totalSec = endSec - startSec;
+                const elapsedSec = nowSeconds - startSec;
+                const remainingSec = Math.max(0, endSec - nowSeconds);
+
+                const minutesLeft = Math.floor(remainingSec / 60);
+                const secondsLeft = Math.floor(remainingSec % 60);
+                timeRemainingEl.textContent = `${minutesLeft}:${secondsLeft.toString().padStart(2, '0')} remaining`;
+
+                const progress = Math.min(100, (elapsedSec / totalSec) * 100);
+                progressFillEl.style.width = progress + '%';
+                currentTaskEl.style.setProperty('--progress', progress + '%');
+
+                // Show upcoming tasks (after current)
+                let upcomingHTML = '';
+                for (let i = activeIndex + 1; i < tasks.length; i++) {
+                    const dur = getDurationMinutes(tasks[i]);
+                    upcomingHTML += `
+                        <div class="task-item">
+                            <span class="task-item-name">${tasks[i].name}</span>
+                            <span class="task-item-time">${dur} min</span>
+                        </div>
+                    `;
+                }
+                upcomingTasksEl.innerHTML = upcomingHTML || '<div class="task-item"><span class="task-item-name">Last task of the day!</span></div>';
+
+            } else {
+                // Not currently in any task - find what's next
+                currentTaskEl.classList.remove('active');
+                let nextTask = null;
+                let nextIndex = -1;
+                for (let i = 0; i < tasks.length; i++) {
+                    if (nowMinutes < timeToMinutes(tasks[i].startTime)) {
+                        nextTask = tasks[i];
+                        nextIndex = i;
+                        break;
+                    }
+                }
+
+                if (nextTask) {
+                    // Before or between tasks - show countdown to next
+                    currentTaskNameEl.textContent = "Break Time";
+                    const nextStartSec = timeToMinutes(nextTask.startTime) * 60;
+                    const untilNextSec = Math.max(0, nextStartSec - nowSeconds);
+                    const minutesUntil = Math.floor(untilNextSec / 60);
+                    const secondsUntil = Math.floor(untilNextSec % 60);
+                    timeRemainingEl.textContent = `Next task in ${minutesUntil}:${secondsUntil.toString().padStart(2, '0')}`;
+                    progressFillEl.style.width = '0%';
+                    currentTaskEl.style.setProperty('--progress', '0%');
+
+                    let upcomingHTML = '';
+                    for (let i = nextIndex; i < tasks.length; i++) {
+                        const dur = getDurationMinutes(tasks[i]);
+                        upcomingHTML += `
+                            <div class="task-item">
+                                <span class="task-item-name">${tasks[i].name}</span>
+                                <span class="task-item-time">${dur} min</span>
+                            </div>
+                        `;
+                    }
+                    upcomingTasksEl.innerHTML = upcomingHTML;
+                } else {
+                    // All tasks are done for the day
+                    currentTaskNameEl.textContent = "All Done! &#127881;";
+                    timeRemainingEl.textContent = "Great job today!";
+                    progressFillEl.style.width = '100%';
+                    currentTaskEl.style.setProperty('--progress', '100%');
+                    upcomingTasksEl.innerHTML = '<div class="task-item"><span class="task-item-name">No more tasks!</span></div>';
+                }
+            }
+        }
+
+        setInterval(updateDisplay, 1000);
+        updateDisplay();
+    </script>
+</body>
+</html>
